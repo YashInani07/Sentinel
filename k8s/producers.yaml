@@ -1,0 +1,140 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinel-producer-1-service
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app: sentinel-producer-1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel-producer-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sentinel-producer-1
+  template:
+    metadata:
+      labels:
+        app: sentinel-producer-1
+    spec:
+      containers:
+        - name: producer
+          image: sentinel-producer:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: producer-1
+            - name: COLLECTOR_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: COLLECTOR_URL
+          resources:
+            limits:
+              cpu: "250m"
+              memory: "128Mi"
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinel-producer-2-service
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app: sentinel-producer-2
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel-producer-2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sentinel-producer-2
+  template:
+    metadata:
+      labels:
+        app: sentinel-producer-2
+    spec:
+      containers:
+        - name: producer
+          image: sentinel-producer:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: producer-2
+            - name: COLLECTOR_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: COLLECTOR_URL
+          resources:
+            limits:
+              cpu: "250m"
+              memory: "128Mi"
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinel-producer-3-service
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app: sentinel-producer-3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel-producer-3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sentinel-producer-3
+  template:
+    metadata:
+      labels:
+        app: sentinel-producer-3
+    spec:
+      containers:
+        - name: producer
+          image: sentinel-producer:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SERVICE_NAME
+              value: producer-3
+            - name: COLLECTOR_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: COLLECTOR_URL
+          resources:
+            limits:
+              cpu: "250m"
+              memory: "128Mi"
+            requests:
+              cpu: "50m"
+              memory: "64Mi"

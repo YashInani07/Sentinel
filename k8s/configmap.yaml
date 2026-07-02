@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sentinel-config
+data:
+  COLLECTOR_URL: "http://sentinel-collector-service:8000"
+  DATABASE_URL: "postgresql://postgres:postgres@sentinel-db:5432/sentinel"
+  ALERT_THRESHOLD: "5"
+  POLL_INTERVAL: "10"
+  WINDOW_SECONDS: "60"

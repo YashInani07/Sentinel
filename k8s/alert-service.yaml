@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinel-alert-service
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app: sentinel-alerts
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel-alerts
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sentinel-alerts
+  template:
+    metadata:
+      labels:
+        app: sentinel-alerts
+    spec:
+      containers:
+        - name: alerts
+          image: sentinel-alerts:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: COLLECTOR_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: COLLECTOR_URL
+            - name: ALERT_THRESHOLD
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: ALERT_THRESHOLD
+            - name: POLL_INTERVAL
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: POLL_INTERVAL
+            - name: WINDOW_SECONDS
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel-config
+                  key: WINDOW_SECONDS
+          resources:
+            limits:
+              cpu: "250m"
+              memory: "128Mi"
+            requests:
+              cpu: "50m"
+              memory: "64Mi"

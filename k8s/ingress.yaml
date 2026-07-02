@@ -1,0 +1,54 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sentinel-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /api/collector(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: sentinel-collector-service
+                port:
+                  number: 8000
+          - path: /api/alerts(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: sentinel-alert-service
+                port:
+                  number: 8000
+          - path: /api/producer-1(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: sentinel-producer-1-service
+                port:
+                  number: 8000
+          - path: /api/producer-2(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: sentinel-producer-2-service
+                port:
+                  number: 8000
+          - path: /api/producer-3(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: sentinel-producer-3-service
+                port:
+                  number: 8000
+          - path: /()(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: sentinel-dashboard-service
+                port:
+                  number: 80
