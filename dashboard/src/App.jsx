@@ -14,21 +14,14 @@ const ALERT_URL = import.meta.env.VITE_ALERT_URL ||
 
 const PRODUCER_URLS = {
   'producer-1': import.meta.env.VITE_PRODUCER_1_URL || (isLocalDev ? 'http://localhost:8011' : '/api/producer-1'),
-  'producer-2': import.meta.env.VITE_PRODUCER_2_URL || (isLocalDev ? 'http://localhost:8012' : '/api/producer-2'),
-  'producer-3': import.meta.env.VITE_PRODUCER_3_URL || (isLocalDev ? 'http://localhost:8013' : '/api/producer-3'),
 };
-
-const PRODUCER_NAMES = ['producer-1', 'producer-2', 'producer-3'];
 
 export default function App() {
   const [logs, setLogs] = useState([]);
   const [errorCounts, setErrorCounts] = useState({});
   const [alerts, setAlerts] = useState([]);
-  const [spamming, setSpamming] = useState({
-    'producer-1': false,
-    'producer-2': false,
-    'producer-3': false,
-  });
+  const [producerNames, setProducerNames] = useState(['producer-1']);
+  const [spamming, setSpamming] = useState({});
 
   // Filters state
   const [filterService, setFilterService] = useState('');
@@ -80,10 +73,25 @@ export default function App() {
     }
   };
 
+  // Fetch dynamic service names from collector
+  const fetchServices = async () => {
+    try {
+      const response = await fetch(`${COLLECTOR_URL}/logs/services`);
+      if (response.ok) {
+        const data = await response.json();
+        const uniqueNames = Array.from(new Set(['producer-1', ...data]));
+        setProducerNames(uniqueNames);
+      }
+    } catch (err) {
+      console.warn('Error fetching service list:', err);
+    }
+  };
+
   // Fetch spam status of each producer
   const fetchSpamStatuses = async () => {
     const updatedSpamming = { ...spamming };
-    for (const name of PRODUCER_NAMES) {
+    for (const name of producerNames) {
+      if (!PRODUCER_URLS[name]) continue;
       try {
         const response = await fetch(`${PRODUCER_URLS[name]}/status`);
         if (response.ok) {
@@ -129,12 +137,14 @@ export default function App() {
 
   // Set up periodic polling
   useEffect(() => {
+    fetchServices();
     fetchLogs();
     fetchErrorCounts();
     fetchAlerts();
     fetchSpamStatuses();
 
     const interval = setInterval(() => {
+      fetchServices();
       fetchLogs();
       fetchErrorCounts();
       fetchAlerts();
@@ -210,7 +220,7 @@ export default function App() {
                 60s window
               </span>
             </h2>
-            {PRODUCER_NAMES.map((name) => {
+            {producerNames.map((name) => {
               const count = errorCounts[name] || 0;
               return (
                 <div key={name} className="metric-row">
@@ -226,7 +236,7 @@ export default function App() {
           {/* Spam Controls */}
           <div className="glass" style={{ padding: '20px' }}>
             <h2 className="panel-title">Spam Error Injection</h2>
-            {PRODUCER_NAMES.map((name) => (
+            {producerNames.filter((name) => PRODUCER_URLS[name]).map((name) => (
               <div key={name} className="control-item">
                 <span className="service-badge">{name}</span>
                 <button
@@ -254,7 +264,7 @@ export default function App() {
                 onChange={(e) => setFilterService(e.target.value)}
               >
                 <option value="">All Services</option>
-                {PRODUCER_NAMES.map(name => (
+                {producerNames.map(name => (
                   <option key={name} value={name}>{name}</option>
                 ))}
               </select>

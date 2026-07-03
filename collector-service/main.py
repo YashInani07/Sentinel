@@ -124,6 +124,14 @@ def get_logs(
     query = query.order_by(LogModel.timestamp.desc())
     return query.limit(limit).all()
 
+@app.get("/logs/services", response_model=List[str])
+def get_services(db: Session = Depends(get_db)):
+    """
+    Returns a list of all unique service names that have written logs.
+    """
+    results = db.query(LogModel.service_name).distinct().all()
+    return [row[0] for row in results]
+
 @app.get("/logs/error-counts")
 def get_error_counts(
     window_seconds: int = Query(60, ge=1),
