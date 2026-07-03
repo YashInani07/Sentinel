@@ -4,6 +4,12 @@ Sentinel is a distributed, containerized, and stateless log aggregation pipeline
 
 This repository is ready to be cloned and run locally. Follow the instructions below to get started.
 
+### 🌐 Live Production Deployment
+The production build is fully deployed and accessible live:
+*   **React Dashboard**: [https://sentinel-houtaro1.vercel.app/](https://sentinel-houtaro1.vercel.app/)
+*   **Logs Collector Service**: `https://collector-service-production-3ffd.up.railway.app`
+*   **Alerting Service**: `https://alert-service-production-de82.up.railway.app`
+
 ---
 
 ## Architecture Diagram
@@ -161,3 +167,97 @@ To prevent alert fatigue, a **30-second cooldown** is enforced per service. Howe
 *   **Tier 2 (High)**: `> 20` errors
 *   **Tier 3 (Critical)**: `> 50` errors
 *   **Tier 4 (Disaster)**: `> 100` errors
+
+---
+
+## 🔌 Integrating Sentinel into External Services
+
+You can easily integrate Sentinel logging into any external python backend (like a FastAPI service).
+
+### Automatic Integration Script
+
+To quickly integrate Sentinel's logging middleware, copy this installer script to a file named `install_sentinel.py` in the root of your target service repository:
+
+```python
+import sys
+import traceback
+
+if len(sys.argv) < 3:
+    print("Usage: python3 install_sentinel.py <path_to_main_file> <service_name>")
+    sys.exit(1)
+
+file_path = sys.argv[1]
+service_name = sys.argv[2]
+
+middleware_code = f"""
+import httpx
+import asyncio
+import traceback
+from fastapi import Request
+
+SENTINEL_COLLECTOR_URL = "https://collector-service-production-3ffd.up.railway.app/logs"
+sentinel_client = httpx.AsyncClient(timeout=5.0)
+
+@app.middleware("http")
+async def sentinel_logging_middleware(request: Request, call_next):
+    if request.url.path in ["/docs", "/redoc", "/openapi.json"]:
+        return await call_next(request)
+        
+    start_time = asyncio.get_event_loop().time()
+    try:
+        response = await call_next(request)
+        duration = asyncio.get_event_loop().time() - start_time
+        log_msg = f"{{request.method}} {{request.url.path}} responded with {{response.status_code}} in {{duration:.2f}}s"
+        asyncio.create_task(sentinel_client.post(SENTINEL_COLLECTOR_URL, json={{
+            "service_name": "{service_name}",
+            "level": "INFO",
+            "message": log_msg
+        }}))
+        return response
+    except Exception as exc:
+        duration = asyncio.get_event_loop().time() - start_time
+        error_msg = f"{{request.method}} {{request.url.path}} CRASHED after {{duration:.2f}}s: {{str(exc)}}\\n{{traceback.format_exc()}}"
+        asyncio.create_task(sentinel_client.post(SENTINEL_COLLECTOR_URL, json={{
+            "service_name": "{service_name}",
+            "level": "ERROR",
+            "message": error_msg
+        }}))
+        raise exc
+"""
+
+with open(file_path, "r+") as f:
+    content = f.read()
+    if "sentinel_logging_middleware" in content:
+        print("Sentinel is already installed!")
+        sys.exit(0)
+        
+    lines = content.split("\\n")
+    insert_idx = None
+    for idx, line in enumerate(lines):
+        if "app = FastAPI" in line:
+            insert_idx = idx
+            break
+            
+    if insert_idx is None:
+        print("Could not find 'app = FastAPI' in your file. Please install manually.")
+        sys.exit(1)
+        
+    lines.insert(insert_idx + 1, middleware_code)
+    f.seek(0)
+    f.write("\\n".join(lines))
+    f.truncate()
+    print(f"Successfully integrated Sentinel for '{service_name}'!")
+```
+
+### Running the Script
+
+Run the following command, specifying the path to your main FastAPI file and your desired service name:
+
+```bash
+python3 install_sentinel.py app/main.py my-ecommerce-backend
+```
+
+Once executed:
+1. Commit the changes and deploy your service.
+2. The Sentinel dashboard will dynamically discover the service name and stream its logs live!
+
