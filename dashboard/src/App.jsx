@@ -7,13 +7,15 @@ const isLocalDev =
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
   (window.location.port === '8080' || window.location.port === '5173' || window.location.port === '3000');
 
-const COLLECTOR_URL = isLocalDev ? 'http://localhost:8000' : '/api/collector';
-const ALERT_URL = isLocalDev ? 'http://localhost:8001' : '/api/alerts';
+const COLLECTOR_URL = import.meta.env.VITE_COLLECTOR_URL || 
+  (isLocalDev ? 'http://localhost:8000' : '/api/collector');
+const ALERT_URL = import.meta.env.VITE_ALERT_URL || 
+  (isLocalDev ? 'http://localhost:8001' : '/api/alerts');
 
 const PRODUCER_URLS = {
-  'producer-1': isLocalDev ? 'http://localhost:8011' : '/api/producer-1',
-  'producer-2': isLocalDev ? 'http://localhost:8012' : '/api/producer-2',
-  'producer-3': isLocalDev ? 'http://localhost:8013' : '/api/producer-3',
+  'producer-1': import.meta.env.VITE_PRODUCER_1_URL || (isLocalDev ? 'http://localhost:8011' : '/api/producer-1'),
+  'producer-2': import.meta.env.VITE_PRODUCER_2_URL || (isLocalDev ? 'http://localhost:8012' : '/api/producer-2'),
+  'producer-3': import.meta.env.VITE_PRODUCER_3_URL || (isLocalDev ? 'http://localhost:8013' : '/api/producer-3'),
 };
 
 const PRODUCER_NAMES = ['producer-1', 'producer-2', 'producer-3'];
